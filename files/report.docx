@@ -1,0 +1,16 @@
+﻿How we filtered the packets
+First, we opened the wireshark and got into loopback to listen to the transport in the local machine. 
+We filtered the packets according to their specific protocol, in purpose to find the UDP packets, where our packets are exist. We found there two packets – the packet that the client sent to the server, and the packet that the server sent to the client.
+
+About the port numbers
+The ports are numbers that specifies the actual resource in the computer to send the message to. For example, in client-server architecture, the server is binded to a specific port which the client knows, so when the client sends a message to the server, he sends it to the server ip address, on the server port.
+
+In the wireshark, we can see two port numbers in the packet header – the first port is the sender port on his local machine, and the second port is the reciever port on his local machine (for example, in the packet that the client sent to the server, the first port is the client port, and the second port is the server port).
+As we can see in the wireshark, the ports are in the Transport layer.
+
+About the ip addresses
+The first ip address in the packet header is the ip address of the sender, and the second ip address is the ip address of the reciever.
+
+As we can see, the ip addresses in the packet header are similar to the ip addresses of the local machine, that we found using the ifconfing command.
+
+
