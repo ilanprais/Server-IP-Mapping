@@ -1,7 +1,7 @@
 import socket
 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.sendto(b'www.facebook.com', ('127.0.0.1', 12345))
+s.sendto(b'www.youtube.com', ('127.0.0.1', 12345))
 data, addr = s.recvfrom(1024)
 print(data.decode())
 s.close()

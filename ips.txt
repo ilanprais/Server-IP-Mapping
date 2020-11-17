@@ -1,3 +1,1 @@
-www.facebook.com,110.33.2.7,10
-www.github.com,124.222.224.32,30
-www.bob.com,1.1.1.1,50
+www.github.com,124.222.224.32,3000
