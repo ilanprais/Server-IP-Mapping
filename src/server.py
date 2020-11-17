@@ -41,12 +41,21 @@ class clienthandler:
             
         #check my ips
         if data in self.__domainsMap:
-            return self.__domainsMap[data][0]
+            ret = data + ','
+            for prop in self.__domainsMap[data][0:-1]:
+                ret += str(prop) + ","
+            ret = ret[0:-1]
+            return ret
         #check parent ips
         else:
-            pass
-            # self.__domainsMap[ip] = ...
-            # return ip
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.sendto(data.encode(), (self.__parentServerIP, self.__parentServerPort))
+            result, addr = s.recvfrom(1024)
+            resList = result.decode().split(',')
+            newEntry = (data, resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
+            self.__domainsMap[data] = newEntry[1:]
+            self.__fileHandler.appendEntry(newEntry)
+            return result.decode()
         return ''
 
     def initializeDomainsMap(self):
@@ -55,13 +64,12 @@ class clienthandler:
         for line in lines:
             properties = line.split(',')
             properties.append((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
-            properties = (properties[0], properties[1], float(properties[2]), float(properties[3]))
-            self.__domainsMap[properties[0]] = properties[1 : ]
+            properties = (properties[0], properties[1], int(properties[2]), float(properties[3]))
+            self.__domainsMap[properties[0]] = properties[1:]
             updated.append(properties)
 
         self.__fileHandler.replaceAllEntries(updated)
         
-
 class filehandler:
 
     def __init__(self, fileName):
@@ -104,6 +112,6 @@ class filehandler:
         file.close()
 
 fileHandler = filehandler('ips.txt')
-clientHandler = clienthandler(fileHandler, '127.0.0.1', 12346)
-ser = server(12345, clientHandler)
+clientHandler = clienthandler(fileHandler, '127.0.0.1', 12346) # parent props
+ser = server(12345, clientHandler) # my props
 ser.open()
