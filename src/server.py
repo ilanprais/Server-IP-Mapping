@@ -1,5 +1,6 @@
 import socket
 import sys
+import datetime
 
 class server:
     
@@ -27,13 +28,17 @@ class clienthandler:
         self.__parentServerPort = parentServerPort
 
     def handleRequest(self, data):
-        # for d in self.__domainsMap:
-        #     startTime = self.__domainsMap[d][2]
-        #     ttl = self.__domainsMap[d][1]
-        #     if (currentTime - startTime > ttl):
-        #         del self.__domainsMap[d]
-        #         self.__filehandler.removeLine(d)
+        remove = []
+        for d in self.__domainsMap:
+            startTime = self.__domainsMap[d][2] 
+            ttl = self.__domainsMap[d][1]
+            if ((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds() - startTime > ttl):
+                remove.append(d)
+                self.__fileHandler.removeLine(d)
 
+        for rem in remove:
+            del self.__domainsMap[rem]
+            
         #check my ips
         if data in self.__domainsMap:
             return self.__domainsMap[data][0]
@@ -45,10 +50,17 @@ class clienthandler:
         return ''
 
     def initializeDomainsMap(self):
+        updated = []
         lines = self.__fileHandler.getLines()
         for line in lines:
             properties = line.split(',')
-            self.__domainsMap[properties[0]] = (properties[1], properties[2], 0)
+            properties.append((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
+            properties = (properties[0], properties[1], float(properties[2]), float(properties[3]))
+            self.__domainsMap[properties[0]] = properties[1 : ]
+            updated.append(properties)
+
+        self.__fileHandler.replaceAllEntries(updated)
+        
 
 class filehandler:
 
@@ -72,9 +84,15 @@ class filehandler:
 
     def appendEntry(self, properties):
         file = open(self.__fileName, "a+")
-        self.__map[properties[0]] = (properties[1], properties[2])
-        line = properties[0] + ',' + properties[1] + ',' + properties[2]
+        line = properties[0] + ',' + properties[1] + "," + str(properties[2]) + ',' + str(properties[3])
         file.write(line)
+        file.close()
+
+    def replaceAllEntries(self, entries):
+        file = open(self.__fileName, "w+")
+        for entry in entries:
+            line = entry[0] + ',' + entry[1] + "," + str(entry[2]) + ',' + str(entry[3])
+            file.write(line + '\n')
         file.close()
 
     def removeLine(self, prefix):
