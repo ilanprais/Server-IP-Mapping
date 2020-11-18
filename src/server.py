@@ -4,18 +4,20 @@ import datetime
 
 class server:
     
-    def __init__(self, port, clientHandler):
+    def __init__(self, port):
         self.__port = port
-        self.__clientHandler = clientHandler
 
-    def open(self):
-        self.__clientHandler.initializeDomainsMap()
-
+    def open(self, clientHandler):
+        #initializing the client handler
+        clientHandler.initializeDomainsMap()
+        
+        #opening the server socket that will listen to messages from the client
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+        #binding the socket to the server port
         s.bind(('', self.__port))
 
-        while True:  
-            self.__clientHandler.handleRequest(s)
+        while True:
+            clientHandler.handleRequest(s)
 
 class clienthandler:
 
@@ -100,7 +102,8 @@ class filehandler:
             for line in newLines:
                 f.write(line)
 
-fileHandler = filehandler('ips.txt')
-clientHandler = clienthandler(fileHandler, '127.0.0.1', 12346) # parent props
-ser = server(12345, clientHandler) # my props
-ser.open()
+#creating the server and the client handler with the command line arguments
+server = server(sys.argv[0])
+clientHandler = clienthandler(filehandler(sys.argv[3]), sys.argv[1], sys.argv[2])
+#opening the server with the client handler
+server.open(clientHandler)
