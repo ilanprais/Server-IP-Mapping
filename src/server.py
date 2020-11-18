@@ -41,23 +41,25 @@ class clienthandler:
 
         #getting the message from the client
         data, addr = socket.recvfrom(1024)
-            
+        
+        result = ''
         #checking if the given domain exists in the server
         if data in self.__domainsMap:
             result = data + ','
             for prop in self.__domainsMap[data]:
                 result += str(prop) + ','
             result = result[0:-1]
-            socket.sendto(result.encode(), addr)
         #if the given domain doesn't exist in the server, then sending the request to the parent server
-        else:
+        elif self.__parentServerIP != -1 and self.__parentServerPort != -1:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.sendto(data.encode(), (self.__parentServerIP, self.__parentServerPort))
-            result, addr2 = s.recvfrom(1024)
-            resList = result.decode().split(',')
+            result2, addr2 = s.recvfrom(1024)
+            resList = result2.decode().split(',')
             self.__domainsMap[data] = [resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds()]
             self.__fileHandler.addLine(data + ',' + self.__domainsMap[0] + ',' + self.__domainsMap[1] + ',' + self.__domainsMap[2])
-            socket.sendto(result, addr)
+            result = result2.decode()
+        #sending the result to the client
+        socket.sendto(result.encode(), addr)
 
     def initializeDomainsMap(self):
         updatedLines = []
