@@ -62,6 +62,8 @@ class clienthandler:
     def initializeDomainsMap(self):
         updatedLines = []
         lines = self.__fileHandler.getLines()
+        #for every domain, checking if its line contains the time when the domain was added to the server.
+        #if it doesn't, then initializing this time to the current time
         for line in lines:
             properties = line.split(',')
             properties.append((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
