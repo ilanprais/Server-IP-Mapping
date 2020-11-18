@@ -14,10 +14,8 @@ class server:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
         s.bind(('', self.__port))
 
-        while True:
-            data, addr = s.recvfrom(1024)   
-            result = self.__clientHandler.handleRequest(data.decode())
-            s.sendto(result.encode(), addr)
+        while True:  
+            self.__clientHandler.handleRequest(s)
 
 class clienthandler:
 
@@ -27,89 +25,80 @@ class clienthandler:
         self.__parentServerIP = parentServerIP
         self.__parentServerPort = parentServerPort
 
-    def handleRequest(self, data):
+    def handleRequest(self, socket):
+        #trying to remove domains that their ttl has expired
         remove = []
         for d in self.__domainsMap:
             startTime = self.__domainsMap[d][2] 
             ttl = self.__domainsMap[d][1]
             if ((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds() - startTime > ttl):
                 remove.append(d)
-                self.__fileHandler.removeLine(d)
-
         for rem in remove:
             del self.__domainsMap[rem]
+            self.__fileHandler.removeLine(d)
+
+        #getting the message from the client
+        data, addr = socket.recvfrom(1024)
             
-        #check my ips
+        #checking if the given domain exists in the server
         if data in self.__domainsMap:
-            ret = data + ','
-            for prop in self.__domainsMap[data][0:-1]:
-                ret += str(prop) + ","
-            ret = ret[0:-1]
-            return ret
-        #check parent ips
+            result = data + ','
+            for prop in self.__domainsMap[data]:
+                result += str(prop) + ','
+            result = result[0:-1]
+            socket.sendto(result.encode(), addr)
+        #if the given domain doesn't exist in the server, then sending the request to the parent server
         else:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.sendto(data.encode(), (self.__parentServerIP, self.__parentServerPort))
-            result, addr = s.recvfrom(1024)
+            result, addr2 = s.recvfrom(1024)
             resList = result.decode().split(',')
-            newEntry = (data, resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
-            self.__domainsMap[data] = newEntry[1:]
-            self.__fileHandler.appendEntry(newEntry)
-            return result.decode()
-        return ''
+            self.__domainsMap[data] = [resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds()]
+            self.__fileHandler.addLine(data + ',' + self.__domainsMap[0] + ',' + self.__domainsMap[1] + ',' + self.__domainsMap[2])
+            socket.sendto(result, addr)
 
     def initializeDomainsMap(self):
-        updated = []
+        updatedLines = []
         lines = self.__fileHandler.getLines()
         for line in lines:
             properties = line.split(',')
             properties.append((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
             properties = (properties[0], properties[1], int(properties[2]), float(properties[3]))
             self.__domainsMap[properties[0]] = properties[1:]
-            updated.append(properties)
+            updatedLines.append(properties[0] + ',' + properties[1] + ',' + properties[2] + ',' + properties[3])
 
-        self.__fileHandler.replaceAllEntries(updated)
+        self.__fileHandler.replaceAllLines(updatedLines)
         
 class filehandler:
 
     def __init__(self, fileName):
         self.__fileName = fileName
 
-    def getLines(self):
-        try:
-            file = open(self.__fileName, "r")
-        except:
-            file = open(self.__fileName, "w+")
-
-        lines = file.readlines()
-        file.close()
-        return lines
-
     def addLine(self, line):
-        file = open(self.__fileName, "a+")
-        file.write(line)
-        file.close()
-
-    def appendEntry(self, properties):
-        file = open(self.__fileName, "a+")
-        line = properties[0] + ',' + properties[1] + "," + str(properties[2]) + ',' + str(properties[3])
-        file.write(line)
-        file.close()
-
-    def replaceAllEntries(self, entries):
-        file = open(self.__fileName, "w+")
-        for entry in entries:
-            line = entry[0] + ',' + entry[1] + "," + str(entry[2]) + ',' + str(entry[3])
-            file.write(line + '\n')
-        file.close()
+        with open(self.__fileName, "a+") as f:
+            f.write(line)
 
     def removeLine(self, prefix):
         lines = self.getLines()
-        file = open(self.__fileName, 'w')
-        for line in lines:
-            if (line.startswith(prefix) == False):
-                file.write(line)
-        file.close()
+        with open(self.__fileName, 'w') as f:
+            for line in lines:
+                if (line.startswith(prefix) == False):
+                    file.write(line)
+
+    def getLines(self):
+        try:
+            f = open(self.__fileName, "r")
+        except:
+            f = open(self.__fileName, "w+")
+
+        lines = f.readlines()
+        f.close()
+        return lines
+
+    def replaceAllLines(self, newLines):
+        with open(self.__fileName, "w+") as f:
+            for line in newLines:
+                f.write(line)
 
 fileHandler = filehandler('ips.txt')
 clientHandler = clienthandler(fileHandler, '127.0.0.1', 12346) # parent props
