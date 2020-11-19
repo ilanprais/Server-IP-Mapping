@@ -28,6 +28,10 @@ class clienthandler:
         self.__parentServerPort = parentServerPort
 
     def handleRequest(self, sock):
+         #getting the message from the client
+        data, addr = sock.recvfrom(1024)
+        data = data.decode()
+        
         #trying to remove domains that their ttl has expired
         remove = []
         for d in self.__domainsMap:
@@ -35,13 +39,9 @@ class clienthandler:
             ttl = self.__domainsMap[d][1]
             if ((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds() - startTime > ttl):
                 remove.append(d)
+                self.__fileHandler.removeLine(d)
         for rem in remove:
             del self.__domainsMap[rem]
-            self.__fileHandler.removeLine(d)
-
-        #getting the message from the client
-        data, addr = sock.recvfrom(1024)
-        data = data.decode()
         
         result = ''
         #checking if the given domain exists in the server
