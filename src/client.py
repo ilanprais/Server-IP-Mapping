@@ -9,4 +9,7 @@ while True:
     domain = input()
     s.sendto(domain.encode(), (sys.argv[1], int(sys.argv[2])))
     data, addr = s.recvfrom(1024)
-    print(data.decode().split(',')[1])
+    try:
+        print(data.decode().split(',')[1])
+    except:
+        print(data.decode())
