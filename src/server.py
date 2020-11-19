@@ -51,13 +51,13 @@ class clienthandler:
                 result += str(prop) + ','
             result = result[0:-1]
         #if the given domain doesn't exist in the server, then sending the request to the parent server
-        elif self.__parentServerIP != -1 and self.__parentServerPort != -1:
+        elif self.__parentServerIP != '-1' and self.__parentServerPort != -1:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.sendto(data.encode(), (self.__parentServerIP, self.__parentServerPort))
             result2, addr2 = s.recvfrom(1024)
             resList = result2.decode().split(',')
-            self.__domainsMap[data] = [resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds()]
-            self.__fileHandler.addLine(data + ',' + self.__domainsMap[0] + ',' + self.__domainsMap[1] + ',' + str(self.__domainsMap[2]))
+            self.__domainsMap[data] = [resList[1], float(resList[2]), (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds()]
+            self.__fileHandler.addLine(data + ',' + resList[1] + ',' + resList[2] + ',' + str(self.__domainsMap[data][2]))
             result = result2.decode()
         #sending the result to the client
         sock.sendto(result.encode(), addr)
@@ -83,7 +83,7 @@ class filehandler:
 
     def addLine(self, line):
         with open(self.__fileName, "a+") as f:
-            f.write(line)
+            f.write(line + "\n")
 
     def removeLine(self, prefix):
         lines = self.getLines()
@@ -105,10 +105,9 @@ class filehandler:
     def replaceAllLines(self, newLines):
         with open(self.__fileName, "w+") as f:
             for line in newLines:
-                f.write(line)
+                f.write(line + '\n')
 
 #creating the server and the client handler with the command line arguments
-print(sys.argv)
 server = server(int(sys.argv[1]))
 clientHandler = clienthandler(filehandler(sys.argv[4]), sys.argv[2], int(sys.argv[3]))
 #opening the server with the client handler
