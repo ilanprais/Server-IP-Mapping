@@ -27,7 +27,7 @@ class clienthandler:
         self.__parentServerIP = parentServerIP
         self.__parentServerPort = parentServerPort
 
-    def handleRequest(self, socket):
+    def handleRequest(self, sock):
         #trying to remove domains that their ttl has expired
         remove = []
         for d in self.__domainsMap:
@@ -40,13 +40,14 @@ class clienthandler:
             self.__fileHandler.removeLine(d)
 
         #getting the message from the client
-        data, addr = socket.recvfrom(1024)
+        data, addr = sock.recvfrom(1024)
+        data = data.decode()
         
         result = ''
         #checking if the given domain exists in the server
         if data in self.__domainsMap:
             result = data + ','
-            for prop in self.__domainsMap[data]:
+            for prop in self.__domainsMap[data][0:-1]:
                 result += str(prop) + ','
             result = result[0:-1]
         #if the given domain doesn't exist in the server, then sending the request to the parent server
@@ -56,10 +57,10 @@ class clienthandler:
             result2, addr2 = s.recvfrom(1024)
             resList = result2.decode().split(',')
             self.__domainsMap[data] = [resList[1], resList[2], (datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds()]
-            self.__fileHandler.addLine(data + ',' + self.__domainsMap[0] + ',' + self.__domainsMap[1] + ',' + self.__domainsMap[2])
+            self.__fileHandler.addLine(data + ',' + self.__domainsMap[0] + ',' + self.__domainsMap[1] + ',' + str(self.__domainsMap[2]))
             result = result2.decode()
         #sending the result to the client
-        socket.sendto(result.encode(), addr)
+        sock.sendto(result.encode(), addr)
 
     def initializeDomainsMap(self):
         updatedLines = []
@@ -71,7 +72,7 @@ class clienthandler:
             properties.append((datetime.datetime.now() - datetime.datetime(2020, 11, 11)).total_seconds())
             properties = (properties[0], properties[1], int(properties[2]), float(properties[3]))
             self.__domainsMap[properties[0]] = properties[1:]
-            updatedLines.append(properties[0] + ',' + properties[1] + ',' + properties[2] + ',' + properties[3])
+            updatedLines.append(properties[0] + ',' + properties[1] + ',' + str(properties[2]) + ',' + str(properties[3]))
 
         self.__fileHandler.replaceAllLines(updatedLines)
         
@@ -86,7 +87,7 @@ class filehandler:
 
     def removeLine(self, prefix):
         lines = self.getLines()
-        with open(self.__fileName, 'w') as f:
+        with open(self.__fileName, 'w') as file:
             for line in lines:
                 if (line.startswith(prefix) == False):
                     file.write(line)
@@ -107,7 +108,8 @@ class filehandler:
                 f.write(line)
 
 #creating the server and the client handler with the command line arguments
-server = server(sys.argv[0])
-clientHandler = clienthandler(filehandler(sys.argv[3]), sys.argv[1], sys.argv[2])
+print(sys.argv)
+server = server(int(sys.argv[1]))
+clientHandler = clienthandler(filehandler(sys.argv[4]), sys.argv[2], int(sys.argv[3]))
 #opening the server with the client handler
 server.open(clientHandler)
